@@ -130,6 +130,20 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+
+	case tea.MouseMsg:
+		switch msg.Button {
+		case tea.MouseButtonWheelUp, tea.MouseButtonLeft:
+			m.comboIndex = (m.comboIndex + 1) % len(colorCombos)
+			return m, nil
+		case tea.MouseButtonWheelDown, tea.MouseButtonRight:
+			m.comboIndex = (m.comboIndex + len(colorCombos) - 1) % len(colorCombos)
+			return m, nil
+		case tea.MouseButtonMiddle:
+			m.shouldQuit = true
+			return m, tea.Quit
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "c":
@@ -179,8 +193,10 @@ func (m model) View() string {
 		b.WriteString(secondaryStyle.Render("..."))
 	}
 	b.WriteString("\n\n")
-
-	b.WriteString(hintStyle.Render(" q/esc para sair • c para trocar cores "))
+	b.WriteString(hintStyle.Render(" q/esc para sair "))
+	if m.nearest != nil {
+		b.WriteString(hintStyle.Render("• c/mouse para trocar cores "))
+	}
 	b.WriteString("\n")
 	return b.String()
 }
@@ -209,7 +225,7 @@ var (
 )
 
 func main() {
-	p := tea.NewProgram(initialModel(), tea.WithAltScreen())
+	p := tea.NewProgram(initialModel(), tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := p.Run(); err != nil {
 		fmt.Println("erro:", err)
 	}
