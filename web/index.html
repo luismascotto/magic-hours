@@ -131,7 +131,8 @@
     <div class="time" id="time">--:--</div>
     <div class="message" id="message"></div>
   </main>
-  <p class="hint">Toque no card para trocar cores</p>
+  <p class="hint" id="hint">Toque no card para trocar cores</p>
+  <p class="hint" id="now">--:--</p>
 
   <script>
     const Sincronicidades = [
@@ -175,12 +176,33 @@
     function findNearest(now) {
       const nowMin = now.getHours() * 60 + now.getMinutes();
       let best = null;
-      let bestDiff = Infinity;
+      let bestDiff = 10;
       for (const s of Sincronicidades) {
         const [h, m] = s.horario.split(":").map(Number);
-        const targetMin = h * 60 + m;
+        let targetMin = h * 60 + m;
+        if (now.getHours() == 23 && targetMin < 60) {
+          targetMin += 24 * 60;
+        }
         const diff = Math.abs(nowMin - targetMin);
         if (diff < bestDiff) {
+          bestDiff = diff;
+          best = { ...s, diffMinutes: diff };
+        }
+      }
+      return best;
+    }
+    function findNext(now) {
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      let best = null;
+      let bestDiff = 61;
+      for (const s of Sincronicidades) {
+        const [h, m] = s.horario.split(":").map(Number);
+        let targetMin = h * 60 + m;
+        if (now.getHours() == 23 && targetMin < 60) {
+          targetMin += 24 * 60;
+        }
+        const diff = targetMin - nowMin;
+        if (diff > 0 && diff < bestDiff) {
           bestDiff = diff;
           best = { ...s, diffMinutes: diff };
         }
@@ -191,11 +213,14 @@
     function update() {
       const now = new Date();
       const nearest = findNearest(now);
+      const next = findNext(now);
 
       const timeEl = document.getElementById("time");
       const msgEl = document.getElementById("message");
       const countEl = document.getElementById("countdown");
       const card = document.getElementById("card");
+      const hintEl = document.getElementById("hint");
+      const nowEl = document.getElementById("now");
 
       if (nearest) {
         if (nearest.horario !== lastHorario) {
@@ -211,17 +236,26 @@
         msgEl.textContent = nearest.mensagem;
         msgEl.classList.remove("empty");
 
-        if (nearest.diffMinutes > 5) {
-          countEl.textContent = `Próxima: ${nearest.horario} (em ${nearest.diffMinutes} min)`;
-        } else {
-          countEl.textContent = "";
-        }
+        hintEl.textContent = "Toque no card para trocar cores";
+        // if (nearest.diffMinutes > 5) {
+        //   countEl.textContent = `(${now.getHours()}:${now.getMinutes()}) Próxima: ${nearest.horario} (em ${nearest.diffMinutes} min)`;
+        // } else {
+        //   countEl.textContent = `(${now.getHours()}:${now.getMinutes()})`;
+        // }
       } else {
-        countEl.textContent = "";
+        //countEl.textContent = "";
         timeEl.textContent = "--:--";
-        msgEl.textContent = "Nenhuma sincronicidade próxima.";
+        // msgEl.textContent = "Nenhuma sincronicidade próxima.";
+        msgEl.textContent = "...";
         msgEl.classList.add("empty");
+        hintEl.textContent = "";
       }
+      if (next) {
+        countEl.textContent = `Próxima: ${next.horario} (em ${next.diffMinutes} min)`;
+      } else {
+        countEl.textContent = ``;
+      }
+      nowEl.textContent = `(${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')})`;
     }
 
     document.getElementById("card").addEventListener("click", () => {
