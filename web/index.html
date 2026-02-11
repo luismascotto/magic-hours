@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0F172A">
+  <meta name="description" content="MagicHours - Mensagens de sincronicidade nos horários espelhados">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MagicHours">
+  <title>MagicHours</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Outfit:wght@300;500;600&display=swap');
+
+    :root {
+      --bg: #0a0c12;
+      --surface: #111827;
+      --muted: #6b7280;
+      --accent: #93c5fd;
+      --golden: #FFD166;
+      --mint: #06D6A0;
+      --pink: #EF476F;
+      --violet: #A78BFA;
+      --amber: #F59E0B;
+      --teal: #073B4C;
+      --ink: #2F2E41;
+      --slate: #0F172A;
+      --midnight: #1B1F3B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      min-height: -webkit-fill-available;
+      height: 100%;
+      background: var(--bg);
+      color: #e5e7eb;
+      font-family: 'Outfit', -apple-system, sans-serif;
+      font-weight: 300;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .header {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      font-size: 1.5rem;
+      letter-spacing: 0.15em;
+      color: var(--accent);
+      background: #1f2937;
+      padding: 0.4rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 1rem;
+    }
+
+    .divider {
+      width: 10rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #374151, transparent);
+      margin: 0 auto 1.5rem;
+    }
+
+    .countdown {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      min-height: 1.5em;
+    }
+
+    .card {
+      max-width: 24rem;
+      width: 100%;
+      padding: 1.5rem;
+      border-radius: 12px;
+      transition: background 0.5s ease, color 0.5s ease;
+    }
+
+    .card .time {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      letter-spacing: 0.1em;
+    }
+
+    .card .message {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+    }
+
+    .hint {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .empty {
+      color: var(--muted);
+    }
+
+    @media (min-width: 480px) {
+      .header { font-size: 1.75rem; }
+      .card .time { font-size: 3rem; }
+      .card .message { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">MagicHours</header>
+  <div class="divider"></div>
+  <div class="countdown" id="countdown"></div>
+  <main class="card" id="card">
+    <div class="time" id="time">--:--</div>
+    <div class="message" id="message"></div>
+  </main>
+  <p class="hint">Toque no card para trocar cores</p>
+
+  <script>
+    const Sincronicidades = [
+      { horario: "00:00", mensagem: "CONEXÃO ESPIRITUAL, OBSERVE O CHAMADO DIVINO, POTENCIAL ENERGÉTICO, POSSIBILIDADES DE AUTOCONHECIMENTO" },
+      { horario: "01:01", mensagem: "INÍCIO, NOVOS PROJETOS, CORAGEM PARA O NOVO, BUSQUE AUTOCONFIANÇA" },
+      { horario: "02:02", mensagem: "BUSQUE SOCIALIZAR, APOSTE EM NOVAS RELAÇÕES (AMIZADES E AMOROSAS), EXPRESSE SUAS EMOÇÕES" },
+      { horario: "03:03", mensagem: "EQUILIBRE SUAS ENERGIAS, BUSQUE ALINHAMENTO MENTAL, BUSQUE HARMONIA E PAZ, COMUNIQUE-SE" },
+      { horario: "04:04", mensagem: "EVITE EXCESSO DE PREOCUPAÇÕES, MENOS IMPORTÂNCIA MATERIAL, ORGANIZE SUAS TAREFAS, CUIDE DO CORPO E DA MENTE" },
+      { horario: "05:05", mensagem: "SAIA DA ZONA DE CONFORTO E DA TIMIDEZ, EXPRESSE-SE, ESCOLHA SUAS PRIORIDADES" },
+      { horario: "06:06", mensagem: "DÊ LIMITES AOS FAMILIARES E RESGUARDE E RESPEITE ALGUMAS INTIMIDADES, ACOLHA SUA CARÊNCIA EMOCIONAL" },
+      { horario: "07:07", mensagem: "RECONHEÇA O PONTO DA SUA VIDA QUE PRECISA DE ATENÇÃO (FINANCEIRO, ESPIRITUAL, EMOCIONAL), BUSQUE CONHECIMENTO E EVOLUÇÃO" },
+      { horario: "08:08", mensagem: "ORGANIZE SUAS FINANÇAS, TRABALHE A PROSPERIDADE EM SUA VIDA, BUSQUE ORGANIZAR SEUS GASTOS" },
+      { horario: "09:09", mensagem: "COLOQUE EM PRÁTICA SEUS PROJETOS INACABADOS, EVITE PENDÊNCIAS. DESAPEGUE-SE DE ROUPAS E OBJETOS QUE NÃO UTILIZA" },
+      { horario: "10:10", mensagem: "ABANDONE SENTIMENTOS DO PASSADO, ABRA MÃO DO QUE TE PRENDE, EVOLUA COM OS ENSINOS, VIVA O PRESENTE" },
+      { horario: "11:11", mensagem: "CONVITE PARA CONEXÃO ESPIRITUAL E AUTOCONHECIMENTO, BUSQUE FORMAS DE EVOLUÇÃO E EXPANDIR A CONSCIÊNCIA" },
+      { horario: "12:12", mensagem: "BUSQUE EQUILIBRAR O CORPO FÍSICO, MENTAL E ESPIRITUAL. BUSQUE CONEXÃO COM A NATUREZA, COM OS DEUSES E COM AS FORÇAS QUE TE NUTREM. RELAXAMENTO E MEDITAÇÃO" },
+      { horario: "13:13", mensagem: "RENOVE-SE, BUSQUE NOVOS HOBBIES E NOVAS METAS PARA SAIR DO COMODISMO" },
+      { horario: "14:14", mensagem: "ALERTA DO UNIVERSO PARA SAIR DO CASULO E IR VIVER. RESPIRAR AO AR LIVRE, SORRIR E AGRADECER, CONHECER PESSOAS" },
+      { horario: "15:15", mensagem: "NÃO DÊ IMPORTÂNCIA PARA O QUE AS PESSOAS PENSAM SOBRE VOCÊ, CONFIE NA SUA INTUIÇÃO E LIBERTE-SE, NÃO PRECISA AGRADAR A TODOS" },
+      { horario: "16:16", mensagem: "SILENCIE, MEDITE. OUÇA, ESTUDE. SEJA RESILIENTE, MEDITE E ENCONTRE EVOLUÇÃO PESSOAL" },
+      { horario: "17:17", mensagem: "VALORIZE O QUE REALMENTE POSSUI IMPORTÂNCIA, DÊ ATENÇÃO PARA A SUA SAÚDE, SUAS RELAÇÕES E SUA FELICIDADE" },
+      { horario: "18:18", mensagem: "DESAPEGUE-SE DO QUE NÃO TE FAZ BEM. ABRA MÃO DE RELAÇÕES TÓXICAS, LIMPE À SUA VOLTA, LIVRE-SE DO QUE NÃO UTILIZA" },
+      { horario: "19:19", mensagem: "REFLITA SOBRE SUA MISSÃO DE VIDA, PENSE QUAL PAPEL VOCÊ QUER DESEMPENHAR NA TERRA E O QUE VOCÊ ESTÁ FAZENDO PARA SER ALGUÉM MELHOR" },
+      { horario: "20:20", mensagem: "HORA DE AGIR, NADA VAI CAMINHAR SEM ESFORÇO. O QUE FALTA PARA ALCANÇAR OS SEUS OBJETIVOS? O QUE VOCÊ ESTÁ FAZENDO PARA DAR CERTO?" },
+      { horario: "21:21", mensagem: "ENSINE E AJUDE AO PRÓXIMO, SEJA A ENCONTRAR O CAMINHO DE LUZ E EVOLUÇÃO, AÇÕES SOCIAIS E AUXÍLIO À CARIDADE." },
+      { horario: "22:22", mensagem: "DÊ ATENÇÃO PARA A SAÚDE, OBSERVE OS SINAIS QUE O SEU CORPO ESTÁ DANDO. RESGUARDE-SE, ALIMENTE-SE BEM, EXERCITE-SE E LIBERTE-SE DE VÍCIOS EMOCIONAIS" },
+      { horario: "23:23", mensagem: "ACREDITE NAS SUAS POSSIBILIDADES, CONFIE NO SEU POTENCIAL, VALORIZE SEUS ESFORÇOS E RESPEITE O CAMINHO QUE VOCÊ VEM TRILHANDO, CONQUISTE O MUNDO." }
+    ];
+
+    const colorCombos = [
+      { fg: "#FFD166", bg: "#073B4C" },
+      { fg: "#06D6A0", bg: "#1B1F3B" },
+      { fg: "#EF476F", bg: "#2F2E41" },
+      { fg: "#A78BFA", bg: "#111827" },
+      { fg: "#F59E0B", bg: "#0F172A" }
+    ];
+
+    let comboIndex = Math.floor(Math.random() * colorCombos.length);
+    let lastHorario = "";
+
+    function findNearest(now) {
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+      let best = null;
+      let bestDiff = Infinity;
+      for (const s of Sincronicidades) {
+        const [h, m] = s.horario.split(":").map(Number);
+        const targetMin = h * 60 + m;
+        const diff = Math.abs(nowMin - targetMin);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          best = { ...s, diffMinutes: diff };
+        }
+      }
+      return best;
+    }
+
+    function update() {
+      const now = new Date();
+      const nearest = findNearest(now);
+
+      const timeEl = document.getElementById("time");
+      const msgEl = document.getElementById("message");
+      const countEl = document.getElementById("countdown");
+      const card = document.getElementById("card");
+
+      if (nearest) {
+        if (nearest.horario !== lastHorario) {
+          lastHorario = nearest.horario;
+          comboIndex = Math.floor(Math.random() * colorCombos.length);
+        }
+
+        const combo = colorCombos[comboIndex];
+        card.style.background = combo.bg;
+        card.style.color = combo.fg;
+
+        timeEl.textContent = nearest.horario;
+        msgEl.textContent = nearest.mensagem;
+        msgEl.classList.remove("empty");
+
+        if (nearest.diffMinutes > 5) {
+          countEl.textContent = `Próxima: ${nearest.horario} (em ${nearest.diffMinutes} min)`;
+        } else {
+          countEl.textContent = "";
+        }
+      } else {
+        countEl.textContent = "";
+        timeEl.textContent = "--:--";
+        msgEl.textContent = "Nenhuma sincronicidade próxima.";
+        msgEl.classList.add("empty");
+      }
+    }
+
+    document.getElementById("card").addEventListener("click", () => {
+      comboIndex = (comboIndex + 1) % colorCombos.length;
+      update();
+    });
+
+    update();
+    setInterval(update, 1000);
+  </script>
+</body>
+</html>
