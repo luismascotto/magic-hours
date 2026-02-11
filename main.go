@@ -50,7 +50,8 @@ type tickMsg struct{}
 type model struct {
 	currentTime time.Time
 	nearest     *Sincronicidade
-	diffMinutes int
+	next        *Sincronicidade
+	nextMinutes int
 	shouldQuit  bool
 	lastHorario string
 	comboIndex  int
@@ -60,11 +61,13 @@ type model struct {
 func initialModel() model {
 	mrand.Seed(time.Now().UnixNano())
 	now := time.Now()
-	nearest, diff := findNearestSincronicidade(now)
+	nearest, _ := findNearestSincronicidade(now)
+	next, nextMin := findNextSincronicidade(now)
 	return model{
 		currentTime: now,
 		nearest:     nearest,
-		diffMinutes: diff,
+		next:        next,
+		nextMinutes: nextMin,
 		lastHorario: func() string {
 			if nearest != nil {
 				return nearest.Horario
@@ -76,19 +79,49 @@ func initialModel() model {
 }
 
 func findNearestSincronicidade(now time.Time) (*Sincronicidade, int) {
-	minutesDiff := 1 << 30
-	var closest *Sincronicidade
+	nowMin := now.Hour()*60 + now.Minute()
+	bestDiff := 10
+	var best *Sincronicidade
 	for i := range Sincronicidades {
 		hour, _ := strconv.Atoi(Sincronicidades[i].Horario[0:2])
 		minute, _ := strconv.Atoi(Sincronicidades[i].Horario[3:5])
-		target := time.Date(now.Year(), now.Month(), now.Day(), hour, minute, 0, 0, now.Location())
-		diff := int(math.Abs(now.Sub(target).Minutes()))
-		if diff < minutesDiff {
-			minutesDiff = diff
-			closest = &Sincronicidades[i]
+		targetMin := hour*60 + minute
+		if now.Hour() == 23 && targetMin < 60 {
+			targetMin += 24 * 60
+		}
+		diff := int(math.Abs(float64(nowMin - targetMin)))
+		if diff < bestDiff {
+			bestDiff = diff
+			best = &Sincronicidades[i]
 		}
 	}
-	return closest, minutesDiff
+	if best == nil {
+		return nil, 0
+	}
+	return best, bestDiff
+}
+
+func findNextSincronicidade(now time.Time) (*Sincronicidade, int) {
+	nowMin := now.Hour()*60 + now.Minute()
+	bestDiff := 61
+	var best *Sincronicidade
+	for i := range Sincronicidades {
+		hour, _ := strconv.Atoi(Sincronicidades[i].Horario[0:2])
+		minute, _ := strconv.Atoi(Sincronicidades[i].Horario[3:5])
+		targetMin := hour*60 + minute
+		if now.Hour() == 23 && targetMin < 60 {
+			targetMin += 24 * 60
+		}
+		diff := targetMin - nowMin
+		if diff > 0 && diff < bestDiff {
+			bestDiff = diff
+			best = &Sincronicidades[i]
+		}
+	}
+	if best == nil {
+		return nil, 0
+	}
+	return best, bestDiff
 }
 
 func (m model) Init() tea.Cmd {
@@ -110,9 +143,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.termWidth = msg.Width
 	case tickMsg:
 		m.currentTime = time.Now()
-		nearest, diff := findNearestSincronicidade(m.currentTime)
+		nearest, _ := findNearestSincronicidade(m.currentTime)
+		next, nextMin := findNextSincronicidade(m.currentTime)
 		m.nearest = nearest
-		m.diffMinutes = diff
+		m.next = next
+		m.nextMinutes = nextMin
 		if m.nearest != nil && m.nearest.Horario != m.lastHorario {
 			m.lastHorario = m.nearest.Horario
 			m.comboIndex = mrand.Intn(len(colorCombos))
@@ -134,22 +169,14 @@ func (m model) View() string {
 	panel := lipgloss.NewStyle().Foreground(lipgloss.Color(combo.fg)).Background(lipgloss.Color(combo.bg)).Padding(1, 2).Bold(true)
 
 	wrapWidth := max(int(float64(m.termWidth)*0.5), 20)
-	// if m.nearest != nil && m.diffMinutes <= 5 {
-	// 	wrapped := messageStyle.Width(wrapWidth).Render(m.nearest.Mensagem)
-	// 	content := timeStyle.Render(m.nearest.Horario) + "\n" + wrapped
-	// 	b.WriteString(panel.Render(content) + "\n\n")
-	// } else if m.nearest != nil {
+	if m.next != nil {
+		b.WriteString(secondaryStyle.Render(fmt.Sprintf("Próxima: %s (em %d min)", m.next.Horario, m.nextMinutes)))
+		b.WriteString("\n\n")
+	}
 	if m.nearest != nil {
-		if m.diffMinutes > 5 {
-			b.WriteString(secondaryStyle.Render(fmt.Sprintf("Próxima: %s (em %d min)", m.nearest.Horario, m.diffMinutes)))
-			b.WriteString("\n\n")
-		}
-		// wrapped := messageStyle.Width(wrapWidth).Render(m.nearest.Mensagem)
-		// content := timeStyle.Render(m.nearest.Horario) + "\n" + wrapped
-		// b.WriteString(panel.Render(content))
-		b.WriteString(panel.Render(fmt.Sprintf("%s\n%s",	timeStyle.Render(m.nearest.Horario), messageStyle.Width(wrapWidth).Render(m.nearest.Mensagem))))
+		b.WriteString(panel.Render(fmt.Sprintf("%s\n%s", timeStyle.Render(m.nearest.Horario), messageStyle.Width(wrapWidth).Render(m.nearest.Mensagem))))
 	} else {
-		b.WriteString(secondaryStyle.Render("Nenhuma sincronicidade próxima."))
+		b.WriteString(secondaryStyle.Render("..."))
 	}
 	b.WriteString("\n\n")
 
